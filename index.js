@@ -39,17 +39,3 @@ io.on("connection", function(socket) {
         io.sockets.emit('video-trigger', data);
     })
 });
-
-//Database Connection
-const conn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'watchtogether'
-});
-
-function insertRoom() {
-    conn.query("INSERT INTO `rooms` (`password`) VALUES (null)", function(error, result) {
-        console.log(result);
-    });
-}
