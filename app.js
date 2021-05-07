@@ -11,7 +11,7 @@ const constants = require('./rules/constants');
 const errorMessages = require('./rules/errorMessages');
 const goodMessages = require('./rules/successfulMessages');
 const offensiveWords = require('./rules/offensive_words');
-const { emailRegex, passwordRegex } = require('./rules/constants');
+const successfulMessages = require('./rules/successfulMessages');
 //let a = errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]);
 
 //App setup
@@ -66,23 +66,10 @@ io.on("connection", function(socket) {
         io.sockets.emit('video-trigger', data);
     });
 });
-
-//Database queries funtions
-function getAllRooms(callback) {
-
-    let sql = "SELECT id,password FROM rooms ORDER BY `timestamp` DESC,id DESC";
-
-    con.query(sql, function(err, results) {
-        if (err) {
-            throw err;
-        }
-        return callback(results);
-    })
-}
 //Get Requests
 //Home
 app.get('/', function(req, res) {
-    getAllRooms(function(results) {
+    services.getAllRooms(con, function(results) {
         let rooms = results;
         rooms.forEach(obj => {
             obj.isSecured = obj.password == null ? false : true;
@@ -113,39 +100,64 @@ app.get('/logout', function(req, res) {
 app.post('/register', (req, res) => {
     let username = req.body.username.trim();
     let password = req.body.password.trim();
-    let errors = [];
+    let msgs = [];
     let isFormBad = false;
     if (username === '' || typeof username !== 'string' || password === '' || typeof password !== 'string') {
         res.render(__dirname + '/public/views/register', { msg: [errorMessages.emptyForm] });
         return;
     }
     if (username.length < constants.minLengthOfUsername || username.length > constants.maxLengthOfUsername) {
-        errors.push(errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]))
+        msgs.push(errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]))
         isFormBad = true;
     }
     if (password.length < constants.minLengthOfPassword || password.length > constants.maxLengthOfPassword) {
-        errors.push(errorMessages.invalidPasswordLength([constants.minLengthOfPassword, constants.maxLengthOfPassword]))
+        msgs.push(errorMessages.invalidPasswordLength([constants.minLengthOfPassword, constants.maxLengthOfPassword]))
         isFormBad = true;
     }
     if (constants.passwordRegex.test(password)) {
-        errors.push(errorMessages.invalidPassword)
+        msgs.push(errorMessages.invalidPassword)
         isFormBad = true;
     }
     if (isFormBad) {
-        res.render(__dirname + '/public/views/register', { msg: errors });
+        res.render(__dirname + '/public/views/register', { msg: msgs });
         return;
     }
 
     try {
         services.isBadWordUsed(username, offensiveWords)
     } catch (e) {
-        errors.push(errorMessages.offensiveWordsUsed);
+        msgs.push(errorMessages.offensiveWordsUsed);
         isFormBad = true;
     }
 
     if (isFormBad) {
-        res.render(__dirname + '/public/views/register', { msg: errors });
+        res.render(__dirname + '/public/views/register', { msg: msgs });
         return;
     }
-    console.log('a');
+    let hashedPassword = services.sha512(password);
+    services.getUser(con, username, function(results) {
+        if (!results) {
+            msgs.push(errorMessages.somethingWentWrong);
+            res.render(__dirname + '/public/views/register', { msg: msgs });
+            return;
+        }
+        if (results.length === 1) {
+            msgs.push(errorMessages.usernameInUse);
+            res.render(__dirname + '/public/views/register', { msg: msgs });
+            return;
+        }
+        if (results.length === 0) {
+            services.registerUser(con, username, hashedPassword, function(results) {
+                if (results.affectedRows == 1) {
+                    msgs.push(successfulMessages.successfullyRegistered);
+                    res.render(__dirname + '/public/views/register', { msg: msgs });
+                    return;
+                } else {
+                    msgs.push(errorMessages.somethingWentWrong);
+                    res.render(__dirname + '/public/views/register', { msg: msgs });
+                    return;
+                }
+            })
+        }
+    })
 });

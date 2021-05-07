@@ -14,5 +14,6 @@ module.exports = {
     notVerifiedEmail: "To log in you need to confirm your mail",
     nonExistentProfile: "We did not find an account matching this information",
     emptyEmailOrUserNameLogin: "Please put your email address or username",
-    offensiveWordsUsed: "Sorry but you cannot use bad words"
+    offensiveWordsUsed: "Sorry but you cannot use bad words",
+    somethingWentWrong: "We are sorry,but something went wrong. Please, try again later"
 }
