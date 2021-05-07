@@ -118,15 +118,18 @@ app.post('/register', (req, res) => {
         msgs.push(errorMessages.invalidPasswordLength([constants.minLengthOfPassword, constants.maxLengthOfPassword]))
         isFormBad = true;
     }
+    //Checks if the password meets given regex
     if (!constants.passwordRegex.test(password)) {
         msgs.push(errorMessages.invalidPassword)
         isFormBad = true;
     }
+    //Resend user to the page with message what happened
     if (isFormBad) {
         res.render(__dirname + '/public/views/register', { msg: msgs });
         return;
     }
 
+    //Checks if bad word is used
     try {
         services.isBadWordUsed(username, offensiveWords)
     } catch (e) {
@@ -134,23 +137,28 @@ app.post('/register', (req, res) => {
         isFormBad = true;
     }
 
+    //Resend user to the page with message what happened
     if (isFormBad) {
         res.render(__dirname + '/public/views/register', { msg: msgs });
         return;
     }
-    let hashedPassword = services.sha512(password);
+    //Trying to get the user so if we have the username not to register him again
     services.getUser(con, username, function(results) {
         if (!results) {
             msgs.push(errorMessages.somethingWentWrong);
             res.render(__dirname + '/public/views/register', { msg: msgs });
             return;
         }
-        if (results.length === 1) {
+        if (results.length >= 1) {
+            //Username in use
             msgs.push(errorMessages.usernameInUse);
             res.render(__dirname + '/public/views/register', { msg: msgs });
             return;
         }
         if (results.length === 0) {
+            //Hashes the user password
+            let hashedPassword = services.sha512(password);
+            //Register the user
             services.registerUser(con, username, hashedPassword, function(results) {
                 if (results.affectedRows == 1) {
                     msgs.push(successfulMessages.successfullyRegistered);
