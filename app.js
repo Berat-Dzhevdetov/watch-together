@@ -2,13 +2,24 @@ var express = require('express');
 var socket = require("socket.io");
 const mysql = require('mysql');
 var hbs = require('express-handlebars');
-
-const fs = require('fs');
-const ytdl = require('ytdl-core');
-
+var cors = require('cors');
+//const fs = require('fs');
+//const ytdl = require('ytdl-core');
+//const bodyParser = require('body-parser');
+const services = require('./services');
+const constants = require('./rules/constants');
+const errorMessages = require('./rules/errorMessages');
+const goodMessages = require('./rules/successfulMessages');
+const offensiveWords = require('./rules/offensive_words');
+const { emailRegex, passwordRegex } = require('./rules/constants');
+//let a = errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]);
 
 //App setup
 var app = express();
+app.use(express.urlencoded({ extended: false }))
+app.use(express.json())
+app.use(cors());
+
 
 var server = app.listen(4000, function() {
     console.log('listening to 4000 port');
@@ -77,7 +88,6 @@ app.get('/', function(req, res) {
             obj.isSecured = obj.password == null ? false : true;
         });
         res.render(__dirname + '/public/views/home', {
-            isLogged: true,
             rooms
         })
     })
@@ -100,3 +110,42 @@ app.get('/logout', function(req, res) {
     res.redirect('/');
 });
 //Post Requests
+app.post('/register', (req, res) => {
+    let username = req.body.username.trim();
+    let password = req.body.password.trim();
+    let errors = [];
+    let isFormBad = false;
+    if (username === '' || typeof username !== 'string' || password === '' || typeof password !== 'string') {
+        res.render(__dirname + '/public/views/register', { msg: [errorMessages.emptyForm] });
+        return;
+    }
+    if (username.length < constants.minLengthOfUsername || username.length > constants.maxLengthOfUsername) {
+        errors.push(errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]))
+        isFormBad = true;
+    }
+    if (password.length < constants.minLengthOfPassword || password.length > constants.maxLengthOfPassword) {
+        errors.push(errorMessages.invalidPasswordLength([constants.minLengthOfPassword, constants.maxLengthOfPassword]))
+        isFormBad = true;
+    }
+    if (constants.passwordRegex.test(password)) {
+        errors.push(errorMessages.invalidPassword)
+        isFormBad = true;
+    }
+    if (isFormBad) {
+        res.render(__dirname + '/public/views/register', { msg: errors });
+        return;
+    }
+
+    try {
+        services.isBadWordUsed(username, offensiveWords)
+    } catch (e) {
+        errors.push(errorMessages.offensiveWordsUsed);
+        isFormBad = true;
+    }
+
+    if (isFormBad) {
+        res.render(__dirname + '/public/views/register', { msg: errors });
+        return;
+    }
+    console.log('a');
+});
