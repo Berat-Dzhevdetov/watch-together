@@ -98,23 +98,27 @@ app.get('/logout', function(req, res) {
 });
 //Post Requests
 app.post('/register', (req, res) => {
+    //Getting user input
     let username = req.body.username.trim();
     let password = req.body.password.trim();
     let msgs = [];
     let isFormBad = false;
+    //Checks if user didn't fill the inputs
     if (username === '' || typeof username !== 'string' || password === '' || typeof password !== 'string') {
         res.render(__dirname + '/public/views/register', { msg: [errorMessages.emptyForm] });
         return;
     }
+    //Checks if the username is shorter or longer than allowed
     if (username.length < constants.minLengthOfUsername || username.length > constants.maxLengthOfUsername) {
         msgs.push(errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]))
         isFormBad = true;
     }
+    //Checks if the password is shorter or longer than allowed
     if (password.length < constants.minLengthOfPassword || password.length > constants.maxLengthOfPassword) {
         msgs.push(errorMessages.invalidPasswordLength([constants.minLengthOfPassword, constants.maxLengthOfPassword]))
         isFormBad = true;
     }
-    if (constants.passwordRegex.test(password)) {
+    if (!constants.passwordRegex.test(password)) {
         msgs.push(errorMessages.invalidPassword)
         isFormBad = true;
     }
