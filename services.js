@@ -1,6 +1,7 @@
-const jsSHA = require("jssha");
-module.exports = {
-    isBadWordUsed: (wordToCheck, offensiveWords) => {
+class Services {
+    jsSHA = require("jssha");
+
+    isBadWordUsed(wordToCheck, offensiveWords) {
         wordToCheck = wordToCheck.toLowerCase();
         Object.keys(offensiveWords).forEach(function(key) {
             offensiveWords[key].forEach(value => {
@@ -10,15 +11,15 @@ module.exports = {
             });
         });
         return false;
-    },
-    sha512: (password) => {
+    }
+    sha512(password) {
         if (!password) return;
         var hashObj = new jsSHA("SHA-512", "TEXT", { numRounds: 1 });
         hashObj.update(password);
         var hash = hashObj.getHash("HEX");
         return hash;
-    },
-    getAllRooms: (con) => {
+    }
+    getAllRooms(con) {
         return new Promise(function(resolve, reject) {
             let sql = "SELECT id,password FROM rooms ORDER BY `timestamp` DESC,id DESC";
 
@@ -30,8 +31,8 @@ module.exports = {
                 return resolve(results);
             })
         })
-    },
-    getUser: (con, username, callback, password = '') => {
+    }
+    getUser(con, username, callback, password = '') {
         if (!con || !username || !callback) return;
         let sql = "SELECT * FROM `users` WHERE `username`=?";
         if (password != '') {
@@ -46,8 +47,8 @@ module.exports = {
             }
             return callback(results);
         })
-    },
-    registerUser: (con, username, password, callback) => {
+    }
+    registerUser(con, username, password, callback) {
         if (!con || !username || !callback || !password) return;
         let sql = "INSERT INTO `users` (`username`,`password`)VALUES(?,?)";
         con.query(sql, [
@@ -59,8 +60,8 @@ module.exports = {
             }
             return callback(results);
         })
-    },
-    insertCookieCode: (con, id, code, callback) => {
+    }
+    insertCookieCode(con, id, code, callback) {
         if (!con || !id || !code) return;
         let sql = "UPDATE `users` SET `cookie`=? WHERE `id`=?";
         con.query(sql, [
@@ -72,8 +73,8 @@ module.exports = {
             }
             return callback(results);
         })
-    },
-    createRandomString: (length) => {
+    }
+    createRandomString(length) {
         var result = [];
         var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         var charactersLength = characters.length;
@@ -82,8 +83,8 @@ module.exports = {
                 charactersLength)));
         }
         return result.join('');
-    },
-    getUserDataFromCookie: (con, code) => {
+    }
+    getUserDataFromCookie(con, code) {
         if (!con || !code) return;
         return new Promise(function(resolve, reject) {
             let sql = "SELECT `id`,`username`,`cookie` FROM `users` WHERE `cookie`=?";
@@ -98,8 +99,8 @@ module.exports = {
             })
         })
 
-    },
-    clearUserCookieFromDb: (con, uid, callback) => {
+    }
+    clearUserCookieFromDb(con, uid, callback) {
         if (!con || !uid) return;
         let sql = "UPDATE `users` SET `cookie`=null WHERE id=?";
 
@@ -111,8 +112,8 @@ module.exports = {
             }
             return callback(results);
         })
-    },
-    isLogged: (con, res, cookieName) => {
+    }
+    isLogged(con, res, cookieName) {
         return new Promise(function(resolve, reject) {
             let cookie = res.cookies[cookieName];
             if (!cookie || cookie == undefined && typeof cookie != 'string') {
@@ -129,4 +130,19 @@ module.exports = {
             })
         })
     }
+    getData(con, cookieName, req, res) {
+        let promiseToCheckIfItsLogged = this.isLogged(con, req, cookieName);
+        let promiseUserData = this.getUserDataFromCookie(con, req.cookies[cookieName]);
+        Promise.all([promiseToCheckIfItsLogged, promiseUserData])
+            .then(result => {
+                if (result[0] != true) {
+                    res.redirect('/');
+                    return;
+                }
+
+                return result;
+            });
+    }
 }
+
+module.exports = new Services;

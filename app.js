@@ -3,15 +3,13 @@ var socket = require("socket.io");
 const mysql = require('mysql');
 var hbs = require('express-handlebars');
 var cors = require('cors');
-//const fs = require('fs');
-//const ytdl = require('ytdl-core');
-//const bodyParser = require('body-parser');
-const services = require('./services');
+const Services = require('./Services');
 const constants = require('./rules/constants');
 const errorMessages = require('./rules/errorMessages');
 const offensiveWords = require('./rules/offensive_words');
 const successfulMessages = require('./rules/successfulMessages');
 var cookieParser = require('cookie-parser');
+
 //App setup
 var app = express();
 app.use(express.urlencoded({ extended: false }))
@@ -69,8 +67,8 @@ io.on("connection", function(socket) {
 //Get Requests
 //Home
 app.get('/', async function(req, res) {
-    let promiseForAllRooms = services.getAllRooms(con);
-    let promiseToCheckIfItsLogged = services.isLogged(con, req, constants.cookieName);
+    let promiseForAllRooms = Services.getAllRooms(con);
+    let promiseToCheckIfItsLogged = Services.isLogged(con, req, constants.cookieName);
     Promise.all([promiseForAllRooms, promiseToCheckIfItsLogged])
         .then(result => {
             let rooms = result[0];
@@ -80,7 +78,7 @@ app.get('/', async function(req, res) {
             let isLogged = result[1];
 
             if (isLogged) {
-                services.getUserDataFromCookie(con, req.cookies[constants.cookieName])
+                Services.getUserDataFromCookie(con, req.cookies[constants.cookieName])
                     .then(udata => {
                         res.render(__dirname + '/public/views/home', {
                             rooms,
@@ -99,25 +97,43 @@ app.get('/', async function(req, res) {
 
 //Register
 app.get('/register', function(req, res) {
-    res.render(__dirname + '/public/views/register');
+    Services.isLogged(con, req, constants.cookieName)
+        .then(result => {
+            if (result === true) {
+                res.redirect(__dirname + '/public/views/home');
+            }
+            res.render(__dirname + '/public/views/register');
+        });
 });
 //Login
 app.get('/login', function(req, res) {
-    res.render(__dirname + '/public/views/login');
+    Services.isLogged(con, req, constants.cookieName)
+        .then(result => {
+            if (result === true) {
+                res.redirect(__dirname + '/public/views/home');
+            }
+            res.render(__dirname + '/public/views/login');
+        });
 });
 //Create room
 app.get('/create-room', function(req, res) {
+    let result = Services.getData(con, constants.cookieName, req, res);
 
-    res.render(__dirname + '/public/views/create-room');
+    console.log(result);
+    return;
+    res.render(__dirname + '/public/views/create-room', {
+        isLogged: result[0],
+        user: result[1][0]
+    })
 });
 app.get('/logout', function(req, res) {
-    services.getUserDataFromCookie(con, req.cookies[constants.cookieName])
+    Services.getUserDataFromCookie(con, req.cookies[constants.cookieName])
         .then(result => {
             if (result.length == 0) {
                 res.clearCookie(constants.cookieName);
                 res.redirect('/');
             } else {
-                services.clearUserCookieFromDb(con, result[0].id, function(result) {
+                Services.clearUserCookieFromDb(con, result[0].id, function(result) {
                     if (result.affectedRows == 1) {
                         res.clearCookie(constants.cookieName);
                         res.redirect('/');
@@ -161,7 +177,7 @@ app.post('/register', (req, res) => {
 
     //Checks if bad word is used
     try {
-        services.isBadWordUsed(username, offensiveWords)
+        Services.isBadWordUsed(username, offensiveWords)
     } catch (e) {
         msgs.push(errorMessages.offensiveWordsUsed);
         isFormBad = true;
@@ -173,7 +189,7 @@ app.post('/register', (req, res) => {
         return;
     }
     //Trying to get the user so if we have the username not to register him again
-    services.getUser(con, username, function(results) {
+    Services.getUser(con, username, function(results) {
         if (!results) {
             msgs.push(errorMessages.somethingWentWrong);
             res.render(__dirname + '/public/views/register', { msg: msgs });
@@ -187,9 +203,9 @@ app.post('/register', (req, res) => {
         }
         if (results.length === 0) {
             //Hashes the user password
-            let hashedPassword = services.sha512(password);
+            let hashedPassword = Services.sha512(password);
             //Register the user
-            services.registerUser(con, username, hashedPassword, function(results) {
+            Services.registerUser(con, username, hashedPassword, function(results) {
                 if (results.affectedRows == 1) {
                     msgs.push(successfulMessages.successfullyRegistered);
                     res.render(__dirname + '/public/views/register', { msg: msgs });
@@ -224,26 +240,26 @@ app.post('/login', (req, res) => {
         res.render(__dirname + '/public/views/login', { msg: msgs });
         return;
     }
-    let hashedPassword = services.sha512(password);
-    services.getUser(con, username, function(results) {
+    let hashedPassword = Services.sha512(password);
+    Services.getUser(con, username, function(results) {
         if (results.length === 0) {
             msgs.push(errorMessages.nonExistentProfile);
             res.render(__dirname + '/public/views/login', { msg: msgs });
             return;
         } else if (results.length === 1) {
-            let code = services.createRandomString(128);
+            let code = Services.createRandomString(128);
             var tryingToAvoidDublicatesCookies = setInterval(() => {
-                services.getUserDataFromCookie(con, code)
+                Services.getUserDataFromCookie(con, code)
                     .then(result => {
                         if (result.length >= 1 && result[0].username != username) {
-                            code = services.createRandomString(128);
+                            code = Services.createRandomString(128);
                         } else {
                             clearInterval(tryingToAvoidDublicatesCookies);
                         }
                     })
             }, 40)
             res.cookie(constants.cookieName, code);
-            services.insertCookieCode(con, results[0].id, code, function(result) {
+            Services.insertCookieCode(con, results[0].id, code, function(result) {
                 if (result.affectedRows === 1) {
                     res.redirect('/');
                 } else {
@@ -257,6 +273,13 @@ app.post('/login', (req, res) => {
 })
 app.post('/create-room', (req, res) => {
     //Getting data
-    let src = req.body.src.trim();
+    let src = req.body.srclink.trim();
     let password = req.body.password.trim();
+
+    if (src === '' || password === '') {
+        let msg = 'a' // errorMessages.emptyForm;
+        res.render(__dirname + '/public/views/create-room', { msg });
+        return;
+    }
+    console.log('a');
 })
