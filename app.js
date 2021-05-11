@@ -9,16 +9,16 @@ var cors = require('cors');
 const services = require('./services');
 const constants = require('./rules/constants');
 const errorMessages = require('./rules/errorMessages');
-const goodMessages = require('./rules/successfulMessages');
 const offensiveWords = require('./rules/offensive_words');
 const successfulMessages = require('./rules/successfulMessages');
-//let a = errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]);
-
+var cookieParser = require('cookie-parser');
 //App setup
 var app = express();
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 app.use(cors());
+app.use(cookieParser());
+app.use('/scripts', express.static(__dirname + '/public/scripts'));
 
 
 var server = app.listen(4000, function() {
@@ -68,16 +68,33 @@ io.on("connection", function(socket) {
 });
 //Get Requests
 //Home
-app.get('/', function(req, res) {
-    services.getAllRooms(con, function(results) {
-        let rooms = results;
-        rooms.forEach(obj => {
-            obj.isSecured = obj.password == null ? false : true;
-        });
-        res.render(__dirname + '/public/views/home', {
-            rooms
+app.get('/', async function(req, res) {
+    let promiseForAllRooms = services.getAllRooms(con);
+    let promiseToCheckIfItsLogged = services.isLogged(con, req, constants.cookieName);
+    Promise.all([promiseForAllRooms, promiseToCheckIfItsLogged])
+        .then(result => {
+            let rooms = result[0];
+            rooms.forEach(room => {
+                room.isSecured = room.password === null ? false : true;
+            });
+            let isLogged = result[1];
+
+            if (isLogged) {
+                services.getUserDataFromCookie(con, req.cookies[constants.cookieName])
+                    .then(udata => {
+                        res.render(__dirname + '/public/views/home', {
+                            rooms,
+                            isLogged,
+                            user: udata[0]
+                        })
+                    });
+            } else {
+                res.render(__dirname + '/public/views/home', {
+                    rooms,
+                    isLogged
+                })
+            }
         })
-    })
 });
 
 //Register
@@ -94,7 +111,20 @@ app.get('/create-room', function(req, res) {
     res.render(__dirname + '/public/views/create-room');
 });
 app.get('/logout', function(req, res) {
-    res.redirect('/');
+    services.getUserDataFromCookie(con, req.cookies[constants.cookieName])
+        .then(result => {
+            if (result.length == 0) {
+                res.clearCookie(constants.cookieName);
+                res.redirect('/');
+            } else {
+                services.clearUserCookieFromDb(con, result[0].id, function(result) {
+                    if (result.affectedRows == 1) {
+                        res.clearCookie(constants.cookieName);
+                        res.redirect('/');
+                    }
+                })
+            }
+        })
 });
 //Post Requests
 app.post('/register', (req, res) => {
@@ -173,3 +203,60 @@ app.post('/register', (req, res) => {
         }
     })
 });
+app.post('/login', (req, res) => {
+    //Getting user input
+    let username = req.body.username.trim();
+    let password = req.body.password.trim();
+    let msgs = [];
+    let isFormBad = false;
+    //Checks if user didn't fill the inputs
+    if (username === '' || typeof username !== 'string' || password === '' || typeof password !== 'string') {
+        res.render(__dirname + '/public/views/register', { msg: [errorMessages.emptyForm] });
+        return;
+    }
+    //Checks if the username is shorter or longer than allowed
+    if (username.length < constants.minLengthOfUsername || username.length > constants.maxLengthOfUsername) {
+        msgs.push(errorMessages.invalidUsernameLength([constants.minLengthOfUsername, constants.maxLengthOfUsername]))
+        isFormBad = true;
+    }
+
+    if (isFormBad) {
+        res.render(__dirname + '/public/views/login', { msg: msgs });
+        return;
+    }
+    let hashedPassword = services.sha512(password);
+    services.getUser(con, username, function(results) {
+        if (results.length === 0) {
+            msgs.push(errorMessages.nonExistentProfile);
+            res.render(__dirname + '/public/views/login', { msg: msgs });
+            return;
+        } else if (results.length === 1) {
+            let code = services.createRandomString(128);
+            var tryingToAvoidDublicatesCookies = setInterval(() => {
+                services.getUserDataFromCookie(con, code)
+                    .then(result => {
+                        if (result.length >= 1 && result[0].username != username) {
+                            code = services.createRandomString(128);
+                        } else {
+                            clearInterval(tryingToAvoidDublicatesCookies);
+                        }
+                    })
+            }, 40)
+            res.cookie(constants.cookieName, code);
+            services.insertCookieCode(con, results[0].id, code, function(result) {
+                if (result.affectedRows === 1) {
+                    res.redirect('/');
+                } else {
+                    msgs.push(errorMessages.somethingWentWrong);
+                    res.render(__dirname + '/public/views/login', { msg: msgs });
+                    return;
+                }
+            });
+        }
+    }, hashedPassword)
+})
+app.post('/create-room', (req, res) => {
+    //Getting data
+    let src = req.body.src.trim();
+    let password = req.body.password.trim();
+})

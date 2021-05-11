@@ -2,23 +2,22 @@
 <div class="container">
     <div class="row section-box">
         {{#if isLogged}}
-            {{#each rooms}}
-            <div class="col-sm-4 text-center description-text p-0">
-                <span class="numbering-rooms">Room: {{id}}</span></br>
-                <button style="color:black">Join into the room</button>
-                <span class="numbering-rooms">Is secured: {{isSecured}}</span>
-            </div>
-            {{/each}}
+        {{#each rooms}}
+        <div class="col-sm-4 text-center description-text p-0">
+            <span class="numbering-rooms">Room: {{id}}</span>
+            </br>
+            <button class="btn btn-dark">Join into the room</button>
+            <br>
+            <span class="is-room-secure">Is secured: {{isSecured}}</span>
+        </div>
+        {{/each}}
         {{else}}
-            {{#each rooms}}
-            <div class="col-sm-4 text-center description-text p-0">
-                <span class="numbering-rooms">Room: {{roomId}}</span></br>
-                <span class="numbering-rooms">Is secured: {{isSecured}}</span>
-            </div>
-            {{/each}}
+        {{#each rooms}}
+        <div class="col-sm-4 text-center description-text p-0">
+            <span class="numbering-rooms">Room: {{id}}</span></br>
+            <span class="is-room-secure">Is secured: {{isSecured}}</span>
+        </div>
+        {{/each}}
         {{/if}}
     </div>
 </div>
-<form action="/" method="post">
-    <button>click</button>
-</form>

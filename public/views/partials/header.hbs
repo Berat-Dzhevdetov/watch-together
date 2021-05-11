@@ -3,6 +3,7 @@
   <div class="header-right">
     <a href="/">Home</a>
     {{#if isLogged}}
+    <a href="#">Hello, {{user.username}}</a>
     <a href="create-room">Create Room</a>
     <a href="logout">Logout</a>
     {{else}}

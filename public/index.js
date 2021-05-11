@@ -1,5 +1,3 @@
-var socket = io.connect('http://localhost:4000');
-
 var userName = '';
 var chat = document.querySelector('.chat');
 var video = document.querySelector('video');

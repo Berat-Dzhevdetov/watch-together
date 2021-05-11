@@ -232,6 +232,12 @@ iframe {
     letter-spacing: 3px;
 }
 
+.is-room-secure {
+    font-size: 0.8rem;
+    color: white;
+    letter-spacing: 3px;
+}
+
 .login-box {
     position: absolute;
     top: 50%;
@@ -395,7 +401,7 @@ iframe {
     }
 }
 
-@media screen and (max-width: 500px) {
+@media screen and (max-width: 1000px) {
     .header a {
         float: none;
         display: block;
@@ -403,6 +409,11 @@ iframe {
     }
     .header-right {
         float: none;
+    }
+    .col-sm-4 {
+        -ms-flex: 0 0 33.333333%;
+        flex: 100%;
+        max-width: 100%;
     }
 }
 

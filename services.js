@@ -12,19 +12,23 @@ module.exports = {
         return false;
     },
     sha512: (password) => {
+        if (!password) return;
         var hashObj = new jsSHA("SHA-512", "TEXT", { numRounds: 1 });
         hashObj.update(password);
         var hash = hashObj.getHash("HEX");
         return hash;
     },
-    getAllRooms: (con, callback) => {
-        let sql = "SELECT id,password FROM rooms ORDER BY `timestamp` DESC,id DESC";
+    getAllRooms: (con) => {
+        return new Promise(function(resolve, reject) {
+            let sql = "SELECT id,password FROM rooms ORDER BY `timestamp` DESC,id DESC";
 
-        con.query(sql, function(err, results) {
-            if (err) {
-                throw err;
-            }
-            return callback(results);
+            con.query(sql, function(err, results) {
+                if (err) {
+                    console.log(27);
+                    reject(new Error(err));
+                }
+                return resolve(results);
+            })
         })
     },
     getUser: (con, username, callback, password = '') => {
@@ -54,6 +58,75 @@ module.exports = {
                 throw err;
             }
             return callback(results);
+        })
+    },
+    insertCookieCode: (con, id, code, callback) => {
+        if (!con || !id || !code) return;
+        let sql = "UPDATE `users` SET `cookie`=? WHERE `id`=?";
+        con.query(sql, [
+            code,
+            id
+        ], function(err, results) {
+            if (err) {
+                throw err;
+            }
+            return callback(results);
+        })
+    },
+    createRandomString: (length) => {
+        var result = [];
+        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var charactersLength = characters.length;
+        for (var i = 0; i < length; i++) {
+            result.push(characters.charAt(Math.floor(Math.random() *
+                charactersLength)));
+        }
+        return result.join('');
+    },
+    getUserDataFromCookie: (con, code) => {
+        if (!con || !code) return;
+        return new Promise(function(resolve, reject) {
+            let sql = "SELECT `id`,`username`,`cookie` FROM `users` WHERE `cookie`=?";
+
+            con.query(sql, [
+                code
+            ], function(err, results) {
+                if (err) {
+                    reject(new Error("Error rows is undefined"));
+                }
+                return resolve(results);
+            })
+        })
+
+    },
+    clearUserCookieFromDb: (con, uid, callback) => {
+        if (!con || !uid) return;
+        let sql = "UPDATE `users` SET `cookie`=null WHERE id=?";
+
+        con.query(sql, [
+            uid
+        ], function(err, results) {
+            if (err) {
+                throw err;
+            }
+            return callback(results);
+        })
+    },
+    isLogged: (con, res, cookieName) => {
+        return new Promise(function(resolve, reject) {
+            let cookie = res.cookies[cookieName];
+            if (!cookie || cookie == undefined && typeof cookie != 'string') {
+                return resolve(false);
+            }
+
+            let sql = "SELECT `id`,`username`,`cookie` FROM `users` WHERE `cookie`=?";
+            con.query(sql, [cookie], function(err, results) {
+                if (err) {
+                    reject(new Error(err));
+                }
+                let boolean = results.length === 1 ? true : false;
+                return resolve(boolean);
+            })
         })
     }
 }
