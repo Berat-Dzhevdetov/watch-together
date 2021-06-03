@@ -6,7 +6,7 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
-    "author": "",
+    "author": "Berat Yuseinov",
     "license": "ISC",
     "dependencies": {
         "cookie-parser": "^1.4.5",

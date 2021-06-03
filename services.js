@@ -1,5 +1,5 @@
+let jsSHA = require("jssha");
 class Services {
-    jsSHA = require("jssha");
 
     isBadWordUsed(wordToCheck, offensiveWords) {
         wordToCheck = wordToCheck.toLowerCase();
@@ -21,11 +21,10 @@ class Services {
     }
     getAllRooms(con) {
         return new Promise(function(resolve, reject) {
-            let sql = "SELECT id,password FROM rooms ORDER BY `timestamp` DESC,id DESC";
+            let sql = "SELECT r.password,r.code,u.username FROM rooms AS r JOIN users AS u ON r.userId= u.id ORDER BY `timestamp` DESC";
 
             con.query(sql, function(err, results) {
                 if (err) {
-                    console.log(27);
                     reject(new Error(err));
                 }
                 return resolve(results);
@@ -87,7 +86,7 @@ class Services {
     getUserDataFromCookie(con, code) {
         if (!con || !code) return;
         return new Promise(function(resolve, reject) {
-            let sql = "SELECT `id`,`username`,`cookie` FROM `users` WHERE `cookie`=?";
+            let sql = "SELECT `id`,`username`,`cookie`,`isAdmin` FROM `users` WHERE `cookie`=?";
 
             con.query(sql, [
                 code
@@ -115,9 +114,14 @@ class Services {
     }
     isLogged(con, res, cookieName) {
         return new Promise(function(resolve, reject) {
-            let cookie = res.cookies[cookieName];
-            if (!cookie || cookie == undefined && typeof cookie != 'string') {
-                return resolve(false);
+            let cookie;
+            try {
+                cookie = res.cookies[cookieName] || undefined;
+                if (!cookie || cookie == undefined && typeof cookie != 'string') {
+                    return resolve(false);
+                }
+            } catch (error) {
+                cookie = undefined;
             }
 
             let sql = "SELECT `id`,`username`,`cookie` FROM `users` WHERE `cookie`=?";
@@ -130,18 +134,102 @@ class Services {
             })
         })
     }
-    getData(con, cookieName, req, res) {
+    async getData(con, cookieName, req, res) {
         let promiseToCheckIfItsLogged = this.isLogged(con, req, cookieName);
         let promiseUserData = this.getUserDataFromCookie(con, req.cookies[cookieName]);
-        Promise.all([promiseToCheckIfItsLogged, promiseUserData])
+        return Promise.all([promiseToCheckIfItsLogged, promiseUserData])
             .then(result => {
-                if (result[0] != true) {
-                    res.redirect('/');
-                    return;
-                }
-
                 return result;
             });
+    }
+    createRoom(con, youtubelink, password, code, uid) {
+        return new Promise(function(resolve, reject) {
+            let sql = "INSERT INTO `rooms` (password,src,code,userId)VALUES(?,?,?,?)";
+            con.query(sql, [
+                password,
+                youtubelink,
+                code,
+                uid
+            ], function(err, results) {
+                if (err) {
+                    reject(new Error(err));
+                }
+                return resolve(results);
+            })
+        })
+    }
+    roomData(con, code) {
+        return new Promise(function(resolve, reject) {
+            let sql = "SELECT * FROM `rooms` WHERE code=? LIMIT 1";
+            con.query(sql, [
+                code
+            ], function(err, results) {
+                if (err) {
+                    reject(new Error(err));
+                }
+                return resolve(results[0]);
+            })
+        })
+    }
+    howManyAreLeftInRoom(con, roomCode) {
+        return new Promise(function(resolve, reject) {
+            let sql = "SELECT COUNT(roomCode) AS count FROM roomusers WHERE roomCode = ? LIMIT 1";
+            con.query(sql, [
+                roomCode
+            ], function(err, results) {
+                if (err) {
+                    reject(new Error(err));
+                }
+                return resolve(results[0]);
+            })
+        })
+    }
+    deleteRoom(con, roomCode) {
+        return new Promise(function(resolve, reject) {
+            let sql1 = "DELETE FROM rooms WHERE code = ?";
+            let sql2 = "DELETE FROM roomusers WHERE roomCode = ?";
+            try {
+                con.query(sql1, [
+                    roomCode
+                ])
+                con.query(sql2, [
+                    roomCode
+                ])
+                resolve();
+            } catch (error) {
+                reject();
+            }
+        })
+    }
+    async joinInRoom(con, roomCode, userId) {
+        return new Promise(function(resolve, reject) {
+            let sql = "INSERT INTO roomusers (userId,roomCode)VALUES(?,?)";
+            con.query(sql, [
+                userId,
+                roomCode
+            ], function(err) {
+                if (err) {
+                    reject(new Error(err));
+                }
+                return resolve();
+            })
+
+        })
+    }
+    removeUserFromRoom(con, roomCode, userId) {
+        return new Promise(function(resolve, reject) {
+            let sql = "DELETE FROM roomusers WHERE userId=? AND roomCode=?";
+            con.query(sql, [
+                userId,
+                roomCode
+            ], function(err) {
+                if (err) {
+                    reject(new Error(err));
+                }
+                return resolve();
+            })
+
+        })
     }
 }
 

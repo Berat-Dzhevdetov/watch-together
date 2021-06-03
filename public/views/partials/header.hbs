@@ -1,14 +1,33 @@
-<div class="header">
-  <a href="/" class="logo">WatchTogether</a>
-  <div class="header-right">
-    <a href="/">Home</a>
-    {{#if isLogged}}
-    <a href="#">Hello, {{user.username}}</a>
-    <a href="create-room">Create Room</a>
-    <a href="logout">Logout</a>
-    {{else}}
-    <a href="register">Register</a>
-    <a href="login">Login</a>
-    {{/if}}
-  </div>
-</div>
+<header class="header">
+  <nav class="navbar">
+    <a href="/" class="nav-logo">WatchTogether</a>
+    <ul class="nav-menu">
+      <li class="nav-item">
+        <a href="/" class="nav-link">Home</a>
+      </li>
+      {{#if isLogged}}
+      <li class="nav-item">
+        <a href="#" class="nav-link">Hello, {{user.username}}</a>
+      </li>
+      <li class="nav-item">
+        <a href="/create-room" class="nav-link">Create Room</a>
+      </li>
+      <li class="nav-item">
+        <a href="/logout" class="nav-link">Logout</a>
+      </li>
+      {{else}}
+      <li class="nav-item">
+        <a href="/login" class="nav-link">Login</a>
+      </li>
+      <li class="nav-item">
+        <a href="/register" class="nav-link">Register</a>
+      </li>
+      {{/if}}
+    </ul>
+    <div class="hamburger">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </div>
+  </nav>
+</header>

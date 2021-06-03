@@ -12,7 +12,9 @@
     </div>
     <p>
       <ul>
-        <li>{{msg}}</li>
+        {{#each msgs}}
+        <li>{{this}}</li>
+        {{/each}}
       </ul>
     </p>
     <button>

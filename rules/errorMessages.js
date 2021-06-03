@@ -15,5 +15,7 @@ module.exports = {
     nonExistentProfile: "We did not find an account matching this information",
     emptyEmailOrUserNameLogin: "Please put your email address or username",
     offensiveWordsUsed: "Sorry but you cannot use bad words",
-    somethingWentWrong: "We are sorry,but something went wrong. Please, try again later"
+    somethingWentWrong: "We are sorry,but something went wrong. Please, try again later",
+    invalidYoutubeLink: "Please enter valid youtube link",
+    wrongPassword: "Wrong password"
 }

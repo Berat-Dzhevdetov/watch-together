@@ -1,23 +1,90 @@
 {{>header}}
-<div class="container">
-    <div class="row section-box">
-        {{#if isLogged}}
-        {{#each rooms}}
-        <div class="col-sm-4 text-center description-text p-0">
-            <span class="numbering-rooms">Room: {{id}}</span>
-            </br>
-            <button class="btn btn-dark">Join into the room</button>
-            <br>
-            <span class="is-room-secure">Is secured: {{isSecured}}</span>
-        </div>
-        {{/each}}
-        {{else}}
-        {{#each rooms}}
-        <div class="col-sm-4 text-center description-text p-0">
-            <span class="numbering-rooms">Room: {{id}}</span></br>
-            <span class="is-room-secure">Is secured: {{isSecured}}</span>
-        </div>
-        {{/each}}
-        {{/if}}
+            <div class="container">
+                <div class="row section-box">
+            {{#if isLogged}}
+                {{#if isAdmin}}
+                    {{#each rooms}}
+                    <div class="square" data-key="{{code}}">
+                        <div class="square-inner">
+                            <h1>Room by: {{username}}</h1>
+                            <a href="/room/{{code}}" class="btn btn-dark">Join into the room</a>
+                            <a href="/delete-room/{{code}}" class="btn btn-danger">Delete room</a>
+                        </div>
+                    </div>
+                    {{/each}}
+                    <script>
+                        socket.on('new-room-created', (data) => {
+                            let newlyDiv = document.createElement('div');
+                            newlyDiv.setAttribute("data-key",data.roomCode);
+                            newlyDiv.className = 'square';
+                            newlyDiv.innerHTML = `
+                                <div class="square-inner">
+                                    <h1>Room by: ${data.username}</h1>
+                                    <a href="/room/${data.roomCode}" class="btn btn-dark">Join into the room</a>
+                                    <a href="/delete-room/${data.roomCode}" class="btn btn-danger">Delete room</a>
+                                </div>
+                            `;
+                            let firstDivEl = document.querySelector('.square') || undefined;
+                            if (firstDivEl != undefined)
+                                $(newlyDiv).insertBefore(document.querySelector('.square'));
+                            else
+                                document.querySelector('.section-box').appendChild(newlyDiv);
+                        })
+                    </script>
+                {{else}}
+                    {{#each rooms}}
+                    <div class="square" data-key="{{code}}">
+                        <div class="square-inner">
+                            <h1>Room by: {{username}}</h1>
+                            <a href="/room/{{code}}" class="btn btn-dark">Join into the room</a>
+                        </div>
+                    </div>
+                    {{/each}}
+                    <script>
+                        socket.on('new-room-created', (data) => {
+                            let newlyDiv = document.createElement('div');
+                            newlyDiv.setAttribute("data-key",data.roomCode);
+                            newlyDiv.className = 'square';
+                            newlyDiv.innerHTML = `
+                                <div class="square-inner">
+                                    <h1>Room by: ${data.username}</h1>
+                                    <a href="/room/${data.roomCode}" class="btn btn-dark">Join into the room</a>
+                                </div>
+                            `;
+                            let firstDivEl = document.querySelector('.square') || undefined;
+                            if (firstDivEl != undefined)
+                                $(newlyDiv).insertBefore(document.querySelector('.square'));
+                            else
+                                document.querySelector('.section-box').appendChild(newlyDiv);
+                        })
+                    </script>
+                {{/if}}   
+            {{else}}
+                {{#each rooms}}
+                <div class="square" data-key="{{code}}">
+                    <div class="square-inner">
+                        <h1>Room by: {{username}}</h1>
+                    </div>
+                </div>
+                {{/each}}
+                <script>
+                    socket.on('new-room-created', (data) => {
+                        let newlyDiv = document.createElement('div');
+                        newlyDiv.setAttribute("data-key",data.roomCode);
+                        newlyDiv.className = 'square';
+                        newlyDiv.innerHTML = `
+                            <div class="square-inner">
+                                <h1>Room by: ${data.username}</h1>
+                            </div>
+                        `;
+                        let firstDivEl = document.querySelector('.square') || undefined;
+                        if (firstDivEl != undefined)
+                            $(newlyDiv).insertBefore(document.querySelector('.square'));
+                        else
+                            document.querySelector('.section-box').appendChild(newlyDiv);
+                    })
+                </script>
+            {{/if}}
     </div>
 </div>
+<script src="/scripts/app.js"></script>
