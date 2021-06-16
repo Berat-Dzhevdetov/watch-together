@@ -425,7 +425,7 @@ app.post('/join-room/:code', async function(req, res) {
     let password = Services.sha512(req.body.password.trim());
     let udata = await Services.getData(con, constants.cookieName, req, res);
     Services.roomData(con, code)
-        .then(room => {
+        .then(async(room) => {
             if (room === undefined) {
                 res.status(404).render(__dirname + '/public/views/error', {
                     status_code: 404,
@@ -445,14 +445,16 @@ app.post('/join-room/:code', async function(req, res) {
                     roomCode: code,
                 }
                 io.emit('connected-to-room', data);
-                Services.joinInRoom(con, code, udata[1][0].id);
+                await Services.joinInRoom(con, code, udata[1][0].id);
+                let room = await Services.roomData(con, code);
                 res.render(__dirname + '/public/views/room', {
                     user: udata[1][0],
                     isLogged,
                     roomCode: code,
                     password: true,
                     src: room.src,
-                    //isAdmin: true //todo: not every one is admin
+                    videoSrc: room.src
+                        //isAdmin: true //todo: not every one is admin
                 })
             }
         })

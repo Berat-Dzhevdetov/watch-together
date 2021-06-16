@@ -7,6 +7,7 @@ let commentsDiv = document.getElementById('chat-to-change');
 let usersIco = document.querySelector('i.fa.fa-user');
 let usersDiv = document.getElementById('users-to-change');
 let headingTitle = document.getElementById('title');
+
 let sendMessageBtn = document.getElementById('sendMessage');
 let messageInputEl = document.getElementById('message');
 
@@ -50,10 +51,8 @@ function sendMessageToServer(e) {
 // 2. This code loads the IFrame Player API code asynchronously.
 var tag = document.createElement('script');
 
-
-
 tag.src = "https://www.youtube.com/iframe_api";
-var firstScriptTag = document.querySelector('script');
+var firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 // 3. This function creates an <iframe> (and YouTube player)
@@ -109,16 +108,7 @@ function stopVideo() {
 //     }
 //     return null;
 // });
-window.onbeforeunload = function(e) {
-    e.preventDefault();
-    let obj = {
-        roomCode: Room.getRoomCode(),
-        username: Room.getUsername(),
-        uid: Room.getUid()
-    };
-    socket.emit('left-room', obj);
-    return null;
-};
+
 
 // window.addEventListener('load', () => {
 //     document.getElementById('my-video_html5_api').addEventListener('click', (e) => {
@@ -161,20 +151,20 @@ socket.on('left-room', function(data) {
     newlyDiv.innerHTML = `${data} left from the room.`;
     chat.appendChild(newlyDiv);
 });
-// socket.on('video-trigger', function(data) {
-//     var newlyDiv = document.createElement('div');
-//     newlyDiv.classList.add('join');
-//     let uid = socket.id;
-//     chat.appendChild(newlyDiv);
-//     if (video.paused === true) {
-//         newlyDiv.innerHTML = `${data.userName} just played the video.`;
-//         video.currentTime = data.video;
-//         if (uid == data.uid) return;
-//         video.play();
-//     } else {
-//         newlyDiv.innerHTML = `${data.userName} just paused the video.`;
-//         video.currentTime = data.video;
-//         if (uid == data.uid) return;
-//         video.pause();
-//     }
-// });
+socket.on('video-trigger', function(data) {
+    var newlyDiv = document.createElement('div');
+    newlyDiv.classList.add('join');
+    let uid = socket.id;
+    chat.appendChild(newlyDiv);
+    if (video.paused === true) {
+        newlyDiv.innerHTML = `${data.username} just played the video.`;
+        video.currentTime = data.video;
+        if (uid == data.uid) return;
+        video.play();
+    } else {
+        newlyDiv.innerHTML = `${data.username} just paused the video.`;
+        video.currentTime = data.video;
+        if (uid == data.uid) return;
+        video.pause();
+    }
+});

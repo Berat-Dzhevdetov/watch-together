@@ -28,22 +28,14 @@
   <div id="code">{{roomCode}}</div>
   <div id="username">{{user.username}}</div>
   <div id="uid">{{user.id}}</div>
+  <div id="videosrc">{{videoSrc}}</div>
 </div>
 <div class="content" id="content">
   <div class="left">
     <!-- VIDEO-START -->
 
-    {{!-- <video id="my-video" class="video-js" controls preload="auto" data-setup="{}">
-      <source src="./video.mp4" type="video/mp4" />
-      <p class="vjs-no-js">
-        To view this video please enable JavaScript, and consider upgrading to a
-        web browser that
-      </p>
-    </video> --}}
-    <iframe src="https://www.youtube.com/embed/Q8-rfnqXGms" title="YouTube video player" frameborder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen="true"></iframe>
     <div id="player"></div>
+
     <!-- VIDEO-END -->
   </div>
   <div class="right">
@@ -84,7 +76,11 @@
     </div>
   </div>
 </div>
-<script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
 <script type="module" src="/scripts/Room.js"></script>
 <script type="module" src="/scripts/index.js"></script>
+<script>
+  var scriptUrl = 'https:\/\/www.youtube.com\/s\/player\/0b643cd1\/www-widgetapi.vflset\/www-widgetapi.js';try{var ttPolicy=window.trustedTypes.createPolicy("youtube-widget-api",{createScriptURL:function(x){return x}});scriptUrl=ttPolicy.createScriptURL(scriptUrl)}catch(e){}if(!window["YT"])var YT={loading:0,loaded:0};if(!window["YTConfig"])var YTConfig={"host":"https://www.youtube.com"};
+if(!YT.loading){YT.loading=1;(function(){var l=[];YT.ready=function(f){if(YT.loaded)f();else l.push(f)};window.onYTReady=function(){YT.loaded=1;for(var i=0;i<l.length;i++)try{l[i]()}catch(e$0){}};YT.setConfig=function(c){for(var k in c)if(c.hasOwnProperty(k))YTConfig[k]=c[k]};var a=document.createElement("script");a.type="text/javascript";a.id="www-widgetapi-script";a.src=scriptUrl;a.async=true;var c=document.currentScript;if(c){var n=c.nonce||c.getAttribute("nonce");if(n)a.setAttribute("nonce",n)}var b=
+document.getElementsByTagName("script")[0];b.parentNode.insertBefore(a,b)})()};
+</script>
 {{/unless}}
